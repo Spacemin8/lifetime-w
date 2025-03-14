@@ -83,7 +83,7 @@ const Header: FC<HeaderProps> = ({ menu }) => {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -100, opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="absolute top-16 left-0 w-full bg-white shadow-md z-50 lg:hidden"
+            className="absolute top-16 left-6 bg-[#F9F9F9] shadow-md z-50 lg:hidden" style={{ width: 'calc(100% - 48px)' }}
           >
             <nav className="flex flex-col gap-4 p-4">
               {[

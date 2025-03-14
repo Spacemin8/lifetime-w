@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: Readonly<DynamicPageProps>): 
 
 function RenderPage({ page }: { page: Page }) {
   return (
-    <main className="flex flex-col gap-[60px]">
+    <main className="flex flex-col gap-[30px] lg:gap-[60px]">
       {(page?.hero?.featuredImage || page?.hero?.content) && (<Hero data={page?.hero} />)}
       {page?.emailSender?.emailTitle && (<EmailSender data={page?.emailSender} />)}
       {page?.categoriesAndBrands?.categoriesBrandsTitle && (<CategoriesAndBrands data={page?.categoriesAndBrands} />)}

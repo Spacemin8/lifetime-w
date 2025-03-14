@@ -8,7 +8,7 @@ const EmailSender = ({ data }: { data?: any }) => {
   const [inputValue, setInputValue] = useState("");
 
   return (
-    <div className="w-full flex justify-center py-16 px-4 md:py-24">
+    <div className="w-full flex justify-center pt-16 px-4 md:pt-24">
       <div className="flex flex-col justify-center items-center text-center max-w-[802px] gap-6 md:gap-8">
         <span className="text-[18px] md:text-[20px] leading-[26px] md:leading-[28px] text-[#605770] font-[700]">
           {data?.emailTitle}
