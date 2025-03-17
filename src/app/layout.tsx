@@ -4,6 +4,7 @@ import getHeader from "@/lib/queries/getHeader";
 import getFooter from "@/lib/queries/getFooter";
 import Header from "@/components/Header";
 import Footer from '@/components/Footer';
+import { Toaster } from "react-hot-toast";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -33,6 +34,7 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased max-w-[1592px] mx-auto px-6`}
       >
+        <Toaster position="top-right" />
         <Header menu={headerData.menu} />
         {children}
         <Footer menu={footerData.menu} />

@@ -1,29 +1,27 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-const Hero = ({ data }: { data?: any }) => {
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, [])
-
-  if (!isClient) return null;
+const Hero = React.memo(({ data }: { data?: any }) => {
+  const hyperlinks = useMemo(() => data?.hyperlinks || [], [data?.hyperlinks]);
 
   return (
     <div className="w-full flex justify-center mx-auto px-3 md:px-5 lg:px-7">
       <div className="flex flex-col md:flex-row w-full justify-between items-center mt-10 md:mt-0">
+
         <div className="w-full md:w-1/2 flex flex-col items-center md:items-start text-center md:text-left min-w-[200px] md:mr-6">
-          {data?.featuredImage ? (
+          {data?.featuredImage?.node?.sourceUrl ? (
             <Image
-              src={data?.featuredImage?.node?.sourceUrl}
+              key={data.featuredImage.node.sourceUrl}
+              src={data.featuredImage.node.sourceUrl}
               alt="Hero Logo"
-              width={232}
-              height={32}
+              width={400}
+              height={80}
               className="w-full max-w-[400px] h-auto object-contain"
+              priority
+              loading="eager"
             />
           ) : (
             <div className="flex flex-col gap-3 text-[#605770]">
@@ -37,26 +35,32 @@ const Hero = ({ data }: { data?: any }) => {
           )}
         </div>
 
-        <span className="text-[16px] font-[400] leading-[24px] text-[#2E3743] px-4 md:px-6 text-center md:text-left py-6">
-          {data?.content}
-        </span>
+        {data?.content && (
+          <span className="text-[16px] font-[400] leading-[24px] text-[#2E3743] px-4 md:px-6 text-center md:text-left py-6">
+            {data.content}
+          </span>
+        )}
 
-        <div className="w-full md:w-1/2 flex justify-center md:justify-start">
-          <div className="flex justify-between md:justify-start md:flex-col gap-4 p-6 rounded-[8px] border-t md:border-l md:border-t-0 border-[#43536966] w-full max-w-[600px] py-4 md:py-16">
-            {data?.hyperlinks?.map((item?: any, idx?: number) => (
-              <Link
-                href={item?.link}
-                key={idx}
-                className="text-[14px] font-[400] leading-[22px] underline text-[#5297DC] hover:text-[#417AB3] transition-colors duration-200"
-              >
-                {item?.name}
-              </Link>
-            ))}
+        {hyperlinks.length > 0 && (
+          <div className="w-full md:w-1/2 flex justify-center md:justify-start">
+            <div className="flex justify-between md:justify-start md:flex-col gap-4 p-6 rounded-[8px] border-t md:border-l md:border-t-0 border-[#43536966] w-full max-w-[600px] py-4 md:py-16">
+              {hyperlinks.map((item?: any, idx?: number) => (
+                <Link
+                  href={item.link}
+                  key={idx}
+                  className="text-[14px] font-[400] leading-[22px] underline text-[#5297DC] hover:text-[#417AB3] transition-colors duration-200"
+                >
+                  {item.name}
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
-};
+});
+
+Hero.displayName = 'Hero';
 
 export default Hero;

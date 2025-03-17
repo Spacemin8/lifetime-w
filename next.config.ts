@@ -16,8 +16,16 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'lifetimew.com'
+      },
+      {
+        protocol: 'https',
+        hostname: 'm.media-amazon.com'
       }
     ]
+  },
+  webpack: (config) => {
+    config.resolve.fallback = { vertx: false };
+    return config;
   }
 };
 

@@ -17,7 +17,29 @@ const Footer: FC<FooterProps> = ({ menu }) => {
     setIsClient(true);
   }, [])
 
-  if (!isClient) return null;
+  if (!isClient) {
+    return (
+      <footer className="flex flex-col items-center border-t border-[#F90] text-[#605770] text-sm py-6 px-4 md:px-8 lg:px-16 gap-6">
+        <div className="w-full flex justify-center">
+          <div className="w-[180px] h-[40px] bg-gray-200 animate-pulse rounded"></div>
+        </div>
+        <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:flex justify-center gap-8 md:gap-32 text-[16px] text-center sm:text-left">
+          <div className="flex flex-col gap-4">
+            <div className="h-8 w-20 bg-gray-200 animate-pulse rounded mx-auto sm:mx-0"></div>
+            <div className="h-6 w-40 bg-gray-200 animate-pulse rounded mx-auto sm:mx-0"></div>
+            <div className="h-6 w-40 bg-gray-200 animate-pulse rounded mx-auto sm:mx-0"></div>
+            <div className="h-6 w-40 bg-gray-200 animate-pulse rounded mx-auto sm:mx-0"></div>
+          </div>
+          <div className="flex flex-col gap-4">
+            <div className="h-8 w-20 bg-gray-200 animate-pulse rounded mx-auto sm:mx-0"></div>
+            <div className="h-6 w-40 bg-gray-200 animate-pulse rounded mx-auto sm:mx-0"></div>
+            <div className="h-6 w-40 bg-gray-200 animate-pulse rounded mx-auto sm:mx-0"></div>
+            <div className="h-6 w-40 bg-gray-200 animate-pulse rounded mx-auto sm:mx-0"></div>
+          </div>
+        </div>
+      </footer>
+    );
+  }
 
   return (
     <footer className="flex flex-col items-center border-t border-[#F90] text-[#605770] text-sm py-6 px-4 md:px-8 lg:px-16 gap-6">
