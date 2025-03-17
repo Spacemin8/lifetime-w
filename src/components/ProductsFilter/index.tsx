@@ -7,9 +7,12 @@ import getCategories from "@/lib/queries/getCategories";
 import getBrands from "@/lib/queries/getBrands";
 import { ProductProps, CategoryProps, BrandProps, ProductIdProps } from "../../lib/types";
 import Product from "../Product";
-import config from "@/lib/config";
+import getAAWP from "@/lib/queries/getAAWP";
+
 
 const filterCache = new Map();
+const categoryCache = new Map();
+const brandCache = new Map();
 
 const ProductsFilter = ({ data }: { data?: any }) => {
   const router = useRouter();
@@ -47,14 +50,31 @@ const ProductsFilter = ({ data }: { data?: any }) => {
     });
   }, [selectedFilters]);
 
+  const memoizedCategories = useMemo(() => categories, [categories]);
+
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
+        if (categories.length > 0 || brands.length > 0) {
+          setLoadingFilters(false);
+          return;
+        }
         setLoadingFilters(true);
+
+        if (categoryCache.has("categories") && brandCache.has("brands")) {
+          setCategories(categoryCache.get("categories"));
+          setBrands(brandCache.get("brands"));
+          setLoadingFilters(false);
+          return;
+        }
+
         const [fetchedCategories, fetchedBrands] = await Promise.all([
           getCategories(),
           getBrands()
         ]);
+
+        categoryCache.set("categories", fetchedCategories);
+        brandCache.set("brands", fetchedBrands);
 
         setCategories(fetchedCategories);
         setBrands(fetchedBrands);
@@ -66,7 +86,7 @@ const ProductsFilter = ({ data }: { data?: any }) => {
     };
 
     fetchInitialData();
-  }, []);
+  }, [categoryCache, brandCache, memoizedCategories]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -87,83 +107,23 @@ const ProductsFilter = ({ data }: { data?: any }) => {
           return;
         }
 
-        const data = await getProducts();
+        const [data, aawp] = await Promise.all([getProducts(), getAAWP()]);
 
-        const ownProducts = data.ownProducts?.products?.map((product: any, index: number) => ({
-          ...product,
-          id: index
-        })) || [];
-        const productIds = data.products?.asin
-          .map((product: any) => product?.productId)
-          .filter((id): id is string => id !== undefined);
+        const ownProducts = data.ownProducts?.products ?? [];
+        ownProducts.forEach((product?: any, index?: number) => (product.id = index));
 
-        let convertedProducts: ProductProps[] = [];
+        const offset = ownProducts.length;
+        const combinedProducts = [
+          ...ownProducts,
+          ...aawp.map((product, index) => ({
+            ...product,
+            id: offset + index,
+          })),
+        ];
 
-        if (productIds.length > 0) {
-          const chunkArray = (arr: string[], size: number) => {
-            const chunks = [];
-            for (let i = 0; i < arr.length; i += size) {
-              chunks.push(arr.slice(i, i + size));
-            }
-            return chunks;
-          };
-
-          const chunks = chunkArray(productIds, 10);
-
-          const controller = new AbortController();
-          const { signal } = controller;
-
-          const fetchProductData = chunks.map(chunk => {
-            const queryParams = chunk.map(id => `productId=${id}`).join('&');
-            return fetch(`/api/amazon?${queryParams}`, { signal })
-              .then(res => res.json())
-              .catch(err => {
-                if (err.name !== 'AbortError') {
-                  console.error("Error fetching chunk:", err);
-                }
-                return { products: [] };
-              });
-          });
-
-          try {
-            const allProducts = await Promise.all(fetchProductData);
-
-            const apiProducts = allProducts.flatMap((item) => item.products || []);
-
-            convertedProducts = apiProducts.map((product: any, idx: number) => {
-              const asinProduct = data.products?.asin[idx] || {};
-              return {
-                id: idx + ownProducts.length,
-                brand: product?.brand || "",
-                category: product?.category || "",
-                description: product?.features?.join("\n") || "",
-                price: product?.price || "",
-                title: product?.title || "",
-                isfeatured: asinProduct.isfeatured ?? false,
-                isrelated: asinProduct.isrelated ?? false,
-                warranty: asinProduct.warranty || [],
-                bigImage: {
-                  node: {
-                    sourceUrl: product?.image || "",
-                  },
-                },
-                featuredImage: {
-                  node: {
-                    sourceUrl: product?.image || "",
-                  },
-                },
-                previewImages: asinProduct.previewImages || { nodes: [] },
-                detailsURL: product?.url || "",
-              };
-            });
-          } catch (error) {
-            console.error("Error fetching products from Amazon:", error);
-          }
-        }
-        const combinedProducts = [...ownProducts, ...convertedProducts];
         setAllProducts(combinedProducts);
         setProducts(filterProducts(combinedProducts));
-        setLoading(false);
+
       } catch (err) {
         console.error(err);
         setLoading(false);

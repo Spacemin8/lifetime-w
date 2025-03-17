@@ -5,6 +5,13 @@ export interface DynamicPageProps {
   }>;
 }
 
+export interface AAWP {
+  id?: string;
+  title?: string;
+  content?: any;
+  aawpProducts?: any;
+}
+
 export interface CategoryProps {
   name?: string;
 }
@@ -52,17 +59,6 @@ export interface ProductProps {
 }
 
 export interface ProductIdProps {
-  products: {
-    asin: {
-      productId: string;
-      isfeatured: boolean;
-      isrelated: boolean;
-      previewImages: {
-        nodes: { sourceUrl: string }[];
-      };
-      warranty: string[];
-    }[];
-  };
   ownProducts: {
     products: {
       brand: string;

@@ -5,19 +5,6 @@ export default async function getProducts() {
   const query = `
     query GetProducts {
       page(id: "26", idType: DATABASE_ID) {
-        products {
-          asin {
-            productId
-            isfeatured
-            isrelated
-            previewImages {
-              nodes {
-                sourceUrl
-              }
-            }
-            warranty
-          }
-        }
         ownProducts {
           products {
             bigImage {

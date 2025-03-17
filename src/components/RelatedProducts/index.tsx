@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import getProducts from '@/lib/queries/getProducts';
-import { ProductIdProps, ProductProps } from '../../lib/types';
+import { ProductProps } from '../../lib/types';
+import getAAWP from '@/lib/queries/getAAWP';
 import Product from '../Product';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -19,80 +20,19 @@ const RelatedProducts = ({ data }: { data?: any }) => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const data = await getProducts();
+        const [data, aawp] = await Promise.all([getProducts(), getAAWP()]);
 
-        const ownProducts = data.ownProducts?.products?.map((product: any, index: number) => ({
-          ...product,
-          id: index
-        })) || [];
-        const productIds = data.products?.asin
-          .map((product: any) => product?.productId)
-          .filter((id): id is string => id !== undefined);
+        const ownProducts = data.ownProducts?.products ?? [];
+        ownProducts.forEach((product?: any, index?: number) => (product.id = index));
 
-        let convertedProducts: ProductProps[] = [];
-
-        if (productIds.length > 0) {
-          const chunkArray = (arr: string[], size: number) => {
-            const chunks = [];
-            for (let i = 0; i < arr.length; i += size) {
-              chunks.push(arr.slice(i, i + size));
-            }
-            return chunks;
-          };
-
-          const chunks = chunkArray(productIds, 10);
-
-          const controller = new AbortController();
-          const { signal } = controller;
-
-          const fetchProductData = chunks.map(chunk => {
-            const queryParams = chunk.map(id => `productId=${id}`).join('&');
-            return fetch(`/api/amazon?${queryParams}`, { signal })
-              .then(res => res.json())
-              .catch(err => {
-                if (err.name !== 'AbortError') {
-                  console.error("Error fetching chunk:", err);
-                }
-                return { products: [] };
-              });
-          });
-
-          try {
-            const allProducts = await Promise.all(fetchProductData);
-
-            const apiProducts = allProducts.flatMap((item) => item.products || []);
-
-            convertedProducts = apiProducts.map((product: any, idx: number) => {
-              const asinProduct = data.products?.asin[idx] || {};
-              return {
-                id: idx + ownProducts.length,
-                brand: product?.brand || "",
-                category: product?.category || "",
-                description: product?.features?.join("\n") || "",
-                price: product?.price || "",
-                title: product?.title || "",
-                isfeatured: asinProduct.isfeatured ?? false,
-                isrelated: asinProduct.isrelated ?? false,
-                warranty: asinProduct.warranty || [],
-                bigImage: {
-                  node: {
-                    sourceUrl: product?.image || "",
-                  },
-                },
-                featuredImage: {
-                  node: {
-                    sourceUrl: product?.image || "",
-                  },
-                },
-                previewImages: asinProduct.previewImages || { nodes: [] },
-                detailsURL: product?.url || "",
-              };
-            });
-          } catch (error) {
-            console.error("Error fetching products from Amazon:", error);
-          }
-        }
-        const combinedProducts = [...ownProducts, ...convertedProducts];
+        const offset = ownProducts.length;
+        const combinedProducts = [
+          ...ownProducts,
+          ...aawp.map((product, index) => ({
+            ...product,
+            id: offset + index,
+          })),
+        ];
         setRelatedProducts(combinedProducts?.filter((product) => product?.isrelated === true));
         setProduct(combinedProducts[Number(pathName.replace('/products/', '')) - 1])
         setLoading(false);
