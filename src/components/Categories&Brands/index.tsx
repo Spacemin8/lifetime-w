@@ -89,7 +89,7 @@ const CategoriesAndBrands = ({ data }: { data?: any }) => {
                     className="p-3 sm:p-4 shadow-[0px_0.5px_0px_#435369] bg-[#FAFAFA]"
                   >
                     <Link
-                      href={"/category"}
+                      href={"/brand"}
                       className="text-[13px] sm:text-[14px] font-[400] leading-[20px] sm:leading-[22px] underline text-[#5297DC]"
                     >
                       {item?.name}
