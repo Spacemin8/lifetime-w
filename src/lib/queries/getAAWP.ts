@@ -44,8 +44,12 @@ export default async function getAAWP() {
   $('.aawp-product').each((_, element) => {
     const asin = $(element).attr('data-aawp-product-asin') || '';
     const title = $(element).find('.aawp-product__title').text().trim() || '';
-    const description =
-      $(element).find('.aawp-product__description').text().trim() || '';
+    const description = $(element)
+      .find('.aawp-product__description')
+      .text()
+      .trim()
+      .replace(/(?<!\d)([.!?])\s*(?!\d)/g, '$1\n')
+      .replace(/\n+$/, '');
     const image = $(element).find('img.aawp-product__image').attr('src') || '';
     const url =
       $(element).find('a.aawp-product__image-link').attr('href') || '';

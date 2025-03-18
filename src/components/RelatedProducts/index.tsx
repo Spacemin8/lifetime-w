@@ -33,6 +33,7 @@ const RelatedProducts = ({ data }: { data?: any }) => {
             id: offset + index,
           })),
         ];
+        console.log(combinedProducts);
         setRelatedProducts(combinedProducts?.filter((product) => product?.isrelated === true));
         setProduct(combinedProducts[Number(pathName.replace('/products/', '')) - 1])
         setLoading(false);
