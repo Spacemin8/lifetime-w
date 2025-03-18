@@ -2,10 +2,57 @@
 
 import React, { useState } from "react";
 import Button from "../Button";
+import toast from "react-hot-toast";
+
+const CONVERTKIT_API_KEY = process.env.NEXT_PUBLIC_CONVERTKIT_API_KEY; // Replace with actual key
+const FORM_ID = process.env.NEXT_PUBLIC_CONVERTKIT_FORM_ID;
 
 const EmailSender = ({ data }: { data?: any }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [inputValue, setInputValue] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const handleSubmit = async () => {
+    if (!inputValue) return;
+
+    if (!validateEmail(inputValue)) {
+      toast.error("Invalid email format. Please enter a valid email. ❌", { duration: 3000 });
+      return;
+    }
+
+    setStatus("loading");
+
+    try {
+      const response = await fetch(`https://api.convertkit.com/v3/forms/${FORM_ID}/subscribe`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          api_key: CONVERTKIT_API_KEY,
+          email: inputValue,
+        }),
+      });
+
+      const result = await response.json();
+      if (response.ok) {
+        setStatus("success");
+        setInputValue("");
+        toast.success("Subscription successful! 🎉", { duration: 3000 }); // Show success Snackbar
+      } else {
+        throw new Error(result.error || "Something went wrong");
+      }
+    } catch (error) {
+      console.error("Subscription failed:", error);
+      setStatus("error");
+      toast.error("Subscription failed. Please try again. ❌", { duration: 3000 }); // Show error Snackbar
+    }
+  };
 
   return (
     <div className="w-full flex justify-center pt-16 px-4 md:pt-24">
@@ -41,10 +88,22 @@ const EmailSender = ({ data }: { data?: any }) => {
             />
           </div>
 
+          {/* Subscribe Button */}
           <Button
-            text={data?.subscribe}
+            text={
+              status === "loading" ? (
+                <div className="flex items-center gap-2">
+                  <span>Subscribing...</span>
+                  <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                </div>
+              ) : (
+                data?.subscribe
+              )
+            }
             bg
-            className="!text-[#37393A] !px-6 sm:!px-7 md:!px-[27.45px] !py-2 sm:!py-[9px] md:!py-[11px] !leading-[28px] sm:!leading-[30px] md:!leading-[33px] !text-[18px] sm:!text-[20px] md:!text-[24px]"
+            className="!text-[#37393A] !px-6 sm:!px-7 md:!px-[27.45px] !py-2 sm:!py-[9px] md:!py-[11px] !leading-[28px] sm:!leading-[30px] md:!leading-[33px] !text-[18px] sm:!text-[20px] md:!text-[24px] cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95"
+            onClick={handleSubmit}
+            disabled={status === "loading"}
           />
         </div>
       </div>

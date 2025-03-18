@@ -1,35 +1,35 @@
 import { fetchGraphQL } from '@/lib/functions';
-import { ProductProps } from '@/lib/types';
+import { ProductIdProps } from '@/lib/types';
 
 export default async function getProducts() {
   const query = `
     query GetProducts {
       page(id: "26", idType: DATABASE_ID) {
-        products {
+        ownProducts {
           products {
-            brand
-            category
-            description
-            isfeatured
-            isrelated
-            price
-            title
-            warranty
             bigImage {
               node {
                 sourceUrl
               }
             }
+            brand
+            category
+            description
             featuredImage {
               node {
                 sourceUrl
               }
             }
+            isfeatured
+            isrelated
             previewImages {
               nodes {
                 sourceUrl
               }
             }
+            price
+            title
+            warranty
           }
         }
       }
@@ -38,5 +38,5 @@ export default async function getProducts() {
 
   const response = await fetchGraphQL(query);
 
-  return response.data.page.products.products as ProductProps[];
+  return response.data.page as ProductIdProps;
 }

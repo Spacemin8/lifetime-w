@@ -1,6 +1,5 @@
 import config from '@/lib/config';
 import { GraphQLResponse } from '@/lib/types';
-
 /**
  * Function to execute a GraphQL query.
  */

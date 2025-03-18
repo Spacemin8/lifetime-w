@@ -1,49 +1,129 @@
 'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import getProducts from "@/lib/queries/getProducts";
 import getCategories from "@/lib/queries/getCategories";
 import getBrands from "@/lib/queries/getBrands";
-import { ProductProps, CategoryProps, BrandProps } from "../../lib/types";
+import { ProductProps, CategoryProps, BrandProps, ProductIdProps } from "../../lib/types";
 import Product from "../Product";
+import getAAWP from "@/lib/queries/getAAWP";
+
+
+const filterCache = new Map();
+const categoryCache = new Map();
+const brandCache = new Map();
 
 const ProductsFilter = ({ data }: { data?: any }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const [products, setProducts] = useState<ProductProps[]>([]);
+  const [allProducts, setAllProducts] = useState<ProductProps[]>([]);
   const [categories, setCategories] = useState<CategoryProps[]>([]);
   const [brands, setBrands] = useState<BrandProps[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isFilterOpen, setIsFilterOpen] = useState(false); // For responsive menu toggle
-  const [selectedFilters, setSelectedFilters] = useState({
-    category: searchParams.get("category")?.split(",") || [],
-    brand: searchParams.get("brand")?.split(",") || [],
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [loadingFilters, setLoadingFilters] = useState(true);
+
+  const initialFilters = useMemo(() => ({
+    category: searchParams.get("category")?.split(",").filter(Boolean) || [],
+    brand: searchParams.get("brand")?.split(",").filter(Boolean) || [],
     warranty: searchParams.get("warranty") || "",
-  });
+  }), [searchParams]);
+
+  const [selectedFilters, setSelectedFilters] = useState(initialFilters);
+
+  const cacheKey = useMemo(() => {
+    return `products-${selectedFilters.category.join(',')}-${selectedFilters.brand.join(',')}-${selectedFilters.warranty}`;
+  }, [selectedFilters]);
+
+  const filterProducts = useCallback((products: ProductProps[]) => {
+    return products.filter((product: ProductProps) => {
+      const categoryMatch = selectedFilters.category.length === 0 ||
+        selectedFilters.category.includes(product.category || '');
+      const brandMatch = selectedFilters.brand.length === 0 ||
+        selectedFilters.brand.includes(product.brand || '');
+      const warrantyMatch = !selectedFilters.warranty ||
+        (product?.warranty?.[1] ?? "") === selectedFilters.warranty;
+      return categoryMatch && brandMatch && warrantyMatch;
+    });
+  }, [selectedFilters]);
+
+  const memoizedCategories = useMemo(() => categories, [categories]);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchInitialData = async () => {
       try {
-        setLoading(true);
-        const [fetchedProducts, fetchedCategories, fetchedBrands] = await Promise.all([
-          getProducts(),
+        if (categories.length > 0 || brands.length > 0) {
+          setLoadingFilters(false);
+          return;
+        }
+        setLoadingFilters(true);
+
+        if (categoryCache.has("categories") && brandCache.has("brands")) {
+          setCategories(categoryCache.get("categories"));
+          setBrands(brandCache.get("brands"));
+          setLoadingFilters(false);
+          return;
+        }
+
+        const [fetchedCategories, fetchedBrands] = await Promise.all([
           getCategories(),
           getBrands()
         ]);
 
-        let filteredProducts = fetchedProducts.filter((product: ProductProps) => {
-          const categoryMatch = selectedFilters.category.length === 0 || selectedFilters.category.includes(product.category || '');
-          const brandMatch = selectedFilters.brand.length === 0 || selectedFilters.brand.includes(product.brand || '');
-          const warrantyMatch = !selectedFilters.warranty || (product?.warranty?.[1] ?? "") === selectedFilters.warranty;
-          return categoryMatch && brandMatch && warrantyMatch;
-        });
+        categoryCache.set("categories", fetchedCategories);
+        brandCache.set("brands", fetchedBrands);
 
-        setProducts(filteredProducts);
         setCategories(fetchedCategories);
         setBrands(fetchedBrands);
-        setLoading(false);
+      } catch (err) {
+        console.error("Error fetching filter data:", err);
+      } finally {
+        setLoadingFilters(false);
+      }
+    };
+
+    fetchInitialData();
+  }, [categoryCache, brandCache, memoizedCategories]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        if (filterCache.has(cacheKey)) {
+          setProducts(filterCache.get(cacheKey));
+          setLoading(false);
+          return;
+        }
+
+        setLoading(true);
+
+        if (allProducts.length > 0) {
+          const filtered = filterProducts(allProducts);
+          setProducts(filtered);
+          filterCache.set(cacheKey, filtered);
+          setLoading(false);
+          return;
+        }
+
+        const [data, aawp] = await Promise.all([getProducts(), getAAWP()]);
+
+        const ownProducts = data.ownProducts?.products ?? [];
+        ownProducts.forEach((product?: any, index?: number) => (product.id = index));
+
+        const offset = ownProducts.length;
+        const combinedProducts = [
+          ...ownProducts,
+          ...aawp.map((product, index) => ({
+            ...product,
+            id: offset + index,
+          })),
+        ];
+
+        setAllProducts(combinedProducts);
+        setProducts(filterProducts(combinedProducts));
+
       } catch (err) {
         console.error(err);
         setLoading(false);
@@ -51,9 +131,9 @@ const ProductsFilter = ({ data }: { data?: any }) => {
     };
 
     fetchData();
-  }, [selectedFilters]);
+  }, [cacheKey, filterProducts, allProducts]);
 
-  const handleFilterChange = (filterType: "category" | "brand" | "warranty", value: string) => {
+  const handleFilterChange = useCallback((filterType: "category" | "brand" | "warranty", value: string) => {
     setSelectedFilters((prev) => {
       let updatedFilters;
 
@@ -71,7 +151,7 @@ const ProductsFilter = ({ data }: { data?: any }) => {
 
       return updatedFilters;
     });
-  };
+  }, []);
 
   useEffect(() => {
     const queryString = new URLSearchParams();
@@ -99,7 +179,11 @@ const ProductsFilter = ({ data }: { data?: any }) => {
             {data?.productsFilter[0] !== 'category' ? (
               <>
                 <h4 className="text-[16px] font-[700] pb-4 pt-8 text-[#605770]">Brand</h4>
-                {brands.map((brand) => (
+                {loadingFilters ? (
+                  Array.from({ length: 8 }).map((_, idx) => (
+                    <div key={idx} className="h-6 w-3/4 bg-gray-300 animate-pulse rounded-md"></div>
+                  ))
+                ) : (brands.map((brand) => (
                   <label key={brand.name} className="flex items-center gap-2 text-[14px] text-[#605770]">
                     <input
                       type="checkbox"
@@ -109,39 +193,51 @@ const ProductsFilter = ({ data }: { data?: any }) => {
                     />
                     {brand.name}
                   </label>
-                ))}
+                )))}
               </>
             ) : (
               <>
                 <h4 className="text-[16px] font-[700] pb-4 pt-8 text-[#605770]">Category</h4>
-                {categories.map((category) => (
-                  <label key={category.name} className="flex items-center gap-2 text-[14px] text-[#605770]">
-                    <input
-                      type="checkbox"
-                      className="accent-[#605770] border-gray-400 rounded-md"
-                      checked={selectedFilters.category.includes(category.name || '')}
-                      onChange={() => handleFilterChange("category", category.name || "")}
-                    />
-                    {category.name}
-                  </label>
-                ))}
+                {loadingFilters ? (
+                  Array.from({ length: 8 }).map((_, idx) => (
+                    <div key={idx} className="h-6 w-3/4 bg-gray-300 animate-pulse rounded-md"></div>
+                  ))
+                ) : (
+                  categories.map((category) => (
+                    <label key={category.name} className="flex items-center gap-2 text-[14px] text-[#605770]">
+                      <input
+                        type="checkbox"
+                        className="accent-[#605770] border-gray-400 rounded-md"
+                        checked={selectedFilters.category.includes(category.name || '')}
+                        onChange={() => handleFilterChange("category", category.name || "")}
+                      />
+                      {category.name}
+                    </label>
+                  ))
+                )}
               </>
             )}
           </div>
 
           <div className="space-y-2">
             <h4 className="text-[16px] font-[700] py-6 pt-8 text-[#605770]">Warranty</h4>
-            {["Unconditional", "Limited"].map((warranty) => (
-              <label key={warranty} className="flex items-center gap-2 text-[14px] text-[#605770]">
-                <input
-                  type="checkbox"
-                  className="accent-[#605770] border-gray-400 rounded-md"
-                  checked={selectedFilters.warranty === warranty}
-                  onChange={() => handleFilterChange("warranty", warranty)}
-                />
-                {warranty}
-              </label>
-            ))}
+            {loadingFilters ? (
+              Array.from({ length: 2 }).map((_, idx) => (
+                <div key={idx} className="h-6 w-1/2 bg-gray-300 animate-pulse rounded-md"></div>
+              ))
+            ) : (
+              ["Unconditional", "Limited"].map((warranty) => (
+                <label key={warranty} className="flex items-center gap-2 text-[14px] text-[#605770]">
+                  <input
+                    type="checkbox"
+                    className="accent-[#605770] border-gray-400 rounded-md"
+                    checked={selectedFilters.warranty === warranty}
+                    onChange={() => handleFilterChange("warranty", warranty)}
+                  />
+                  {warranty}
+                </label>
+              ))
+            )}
           </div>
         </div>
       </aside>
@@ -157,8 +253,16 @@ const ProductsFilter = ({ data }: { data?: any }) => {
               <div className="h-8 bg-gray-300 mt-4 w-full rounded-md"></div>
             </div>
           ))
-          : (products.length !== 0 ? products.map((product, idx) => <Product key={idx} product={product} index={idx} />) :
-            <span className="text-[#2E3743] p-2">No products found.</span>)
+          :
+          products.length !== 0 ? (
+            products.map((product, idx) => (
+              <div key={idx} className="w-full">
+                <Product product={product} index={idx} />
+              </div>
+            ))
+          ) : (
+            <span className="text-[#2E3743] p-2">No products found.</span>
+          )
         }
       </div>
     </div>

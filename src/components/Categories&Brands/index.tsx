@@ -8,6 +8,7 @@ import Link from "next/link";
 const CategoriesAndBrands = ({ data }: { data?: any }) => {
   const [categories, setCategories] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -21,6 +22,8 @@ const CategoriesAndBrands = ({ data }: { data?: any }) => {
         if (Array.isArray(brandsData)) setBrands(brandsData);
       } catch (error) {
         console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -41,13 +44,28 @@ const CategoriesAndBrands = ({ data }: { data?: any }) => {
               {data?.categoryTitle}
             </span>
             <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {categories?.map((item?: any, idx?: number) => (
-                <div className="p-3 sm:p-4 shadow-[0px_0.5px_0px_#435369] bg-[#FAFAFA]" key={idx}>
-                  <Link href={'/category'} className="text-[13px] sm:text-[14px] font-[400] leading-[20px] sm:leading-[22px] underline decoration-auto text-[#5297DC]">
-                    {item?.name}
-                  </Link>
-                </div>
-              ))}
+              {loading
+                ? Array.from({ length: 8 }).map((_, idx) => (
+                  <div
+                    key={idx}
+                    className="p-3 sm:p-4 bg-[#FAFAFA] animate-pulse shadow-[0px_0.5px_0px_#435369]"
+                  >
+                    <div className="h-5 sm:h-6 bg-gray-300 rounded-md w-full mx-auto"></div>
+                  </div>
+                ))
+                : categories?.map((item: any, idx: number) => (
+                  <div
+                    key={idx}
+                    className="p-3 sm:p-4 shadow-[0px_0.5px_0px_#435369] bg-[#FAFAFA]"
+                  >
+                    <Link
+                      href={"/category"}
+                      className="text-[13px] sm:text-[14px] font-[400] leading-[20px] sm:leading-[22px] underline text-[#5297DC]"
+                    >
+                      {item?.name}
+                    </Link>
+                  </div>
+                ))}
             </div>
           </div>
 
@@ -56,15 +74,31 @@ const CategoriesAndBrands = ({ data }: { data?: any }) => {
               {data?.brandTitle}
             </span>
             <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {brands?.map((item?: any, idx?: number) => (
-                <div className="p-3 sm:p-4 shadow-[0px_0.5px_0px_#435369] bg-[#FAFAFA]" key={idx}>
-                  <Link href={'/category'} className="text-[13px] sm:text-[14px] font-[400] leading-[20px] sm:leading-[22px] underline decoration-auto text-[#5297DC]">
-                    {item?.name}
-                  </Link>
-                </div>
-              ))}
+              {loading
+                ? Array.from({ length: 8 }).map((_, idx) => (
+                  <div
+                    key={idx}
+                    className="p-3 sm:p-4 bg-[#FAFAFA] animate-pulse shadow-[0px_0.5px_0px_#435369]"
+                  >
+                    <div className="h-5 sm:h-6 bg-gray-300 rounded-md w-full mx-auto"></div>
+                  </div>
+                ))
+                : brands?.map((item: any, idx: number) => (
+                  <div
+                    key={idx}
+                    className="p-3 sm:p-4 shadow-[0px_0.5px_0px_#435369] bg-[#FAFAFA]"
+                  >
+                    <Link
+                      href={"/category"}
+                      className="text-[13px] sm:text-[14px] font-[400] leading-[20px] sm:leading-[22px] underline text-[#5297DC]"
+                    >
+                      {item?.name}
+                    </Link>
+                  </div>
+                ))}
             </div>
           </div>
+
         </div>
       </div>
     </div>

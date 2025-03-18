@@ -5,6 +5,13 @@ export interface DynamicPageProps {
   }>;
 }
 
+export interface AAWP {
+  id?: string;
+  title?: string;
+  content?: any;
+  aawpProducts?: any;
+}
+
 export interface CategoryProps {
   name?: string;
 }
@@ -26,6 +33,7 @@ export interface PreviewProps {
 }
 
 export interface ProductProps {
+  id?: number;
   brand?: string;
   category?: string;
   description?: string;
@@ -47,8 +55,36 @@ export interface ProductProps {
   previewImages?: {
     nodes?: PreviewProps[];
   };
+  detailsURL?: string;
 }
 
+export interface ProductIdProps {
+  ownProducts: {
+    products: {
+      brand: string;
+      category: string;
+      description: string;
+      price: string;
+      title: string;
+      isfeatured: boolean;
+      isrelated: boolean;
+      warranty: string[];
+      bigImage: {
+        node: {
+          sourceUrl: string;
+        };
+      };
+      featuredImage: {
+        node: {
+          sourceUrl: string;
+        };
+      };
+      previewImages: {
+        nodes: { sourceUrl: string }[];
+      };
+    }[];
+  };
+}
 export interface HeaderProps {
   posts?: {
     nodes?: {
