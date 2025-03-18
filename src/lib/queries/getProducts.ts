@@ -30,6 +30,7 @@ export default async function getProducts() {
             price
             title
             warranty
+            detailsURL
           }
         }
       }

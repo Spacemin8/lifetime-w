@@ -27,7 +27,6 @@ const FeaturedProducts = ({ data }: { data?: any }) => {
             id: offset + index,
           })),
         ];
-        console.log(combinedProducts)
         setFeaturedProducts(combinedProducts?.filter((product) => product?.isfeatured === true));
         setLoading(false);
       } catch (err) {
